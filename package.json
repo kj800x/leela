@@ -1,8 +1,10 @@
 {
   "name": "@kj800x/leela",
-  "version": "0.0.1",
+  "version": "0.0.3",
   "description": "Manages stuff. Most competent on the team. Close second to Bender.",
-  "bin": "cli.js",
+  "bin": {
+    "leela": "cli.js"
+  },
   "author": "Kevin Johnson <kevin@kj800x.com>",
   "license": "MIT",
   "repository": {

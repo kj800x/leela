@@ -6,9 +6,7 @@ const glob = util.promisify(require("glob"));
 
 const npm = new NpmApi();
 
-const GLOBAL_PACKAGES_TO_CHECK = [
-  /*"@kj800x/leela",*/ "@kj800x/localproxy-cli",
-];
+const GLOBAL_PACKAGES_TO_CHECK = ["@kj800x/leela", "@kj800x/localproxy-cli"];
 const LOCAL_PACKAGES_TO_CHECK = [
   "@kj800x/localproxy-react-scripts",
   "@kj800x/localproxy-client",

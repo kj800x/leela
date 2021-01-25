@@ -1,3 +1,5 @@
+#!/usr/bin/env node
+
 const process = require("process");
 const execa = require("execa");
 const path = require("path");
