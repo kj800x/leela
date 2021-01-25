@@ -35,22 +35,36 @@ async function getActual(package) {
   })).version;
 }
 
-async function checkGlobalInstallsAreUpToDate() {
+async function checkGlobalInstallsAreUpToDate(fix) {
   for (const globalPackage of GLOBAL_PACKAGES_TO_CHECK) {
     const expected = await getLatest(globalPackage);
     const actual = await getActual(globalPackage);
-    if (expected !== actual) {
+    if (expected === actual) {
+      console.log(`✔️  Global package ${globalPackage} is up to date!`);
+    } else if (fix) {
+      console.log(`⚠️  Global package ${globalPackage} is not up to date!`);
+      console.log(`   ${expected} is latest but ${actual} is installed.`);
+      console.log(`   Attempting to autofix.`);
+      await execa("npm", ["install", "-g", `${globalPackage}@latest`], {
+        stderr: "inherit",
+        stdin: "inherit",
+        stdout: "inherit",
+      });
+    } else {
       console.log(`⚠️  Global package ${globalPackage} is not up to date!`);
       console.log(`   ${expected} is latest but ${actual} is installed.`);
       console.log(`   Run \`npm install -g ${globalPackage}@latest\` to fix.`);
       console.log();
-    } else {
-      console.log(`✔️  Global package ${globalPackage} is up to date!`);
     }
   }
 }
 
-async function checkLocalDeps(json, key, file) {
+async function checkLocalDeps(
+  json,
+  key,
+  file,
+  { push, fix, commit, globRoot }
+) {
   if (json && json[key]) {
     for (const localPackage of LOCAL_PACKAGES_TO_CHECK) {
       if (json[key][localPackage]) {
@@ -58,11 +72,79 @@ async function checkLocalDeps(json, key, file) {
         const expected = await getLatest(localPackage);
         if (actual === expected) {
           console.log(
-            `✔️  Local package ${localPackage} is up to date! [in "${key}" of "${file}"]`
+            `✔️  Local package ${localPackage} is up to date! [in "${key}" of "${path.join(
+              globRoot,
+              file
+            )}"]`
           );
+        } else if (fix) {
+          let stashed = false;
+          console.log(
+            `⚠️  Local package ${localPackage} is not up to date! [in "${key}" of "${path.join(
+              globRoot,
+              file
+            )}"]`
+          );
+          console.log(`   ${expected} is latest but ${actual} is installed.`);
+          console.log(`   Attempting to autofix.`);
+          console.log();
+          if (commit && isInGit(path.resolve(globRoot, file))) {
+            const { stdout, stderr } = await runGit(
+              "stash",
+              [],
+              path.dirname(path.resolve(globRoot, file)),
+              {
+                stdin: "pipe",
+                stdout: "pipe",
+                stderr: "pipe",
+                reject: false,
+              }
+            );
+            stashed = !`${stdout}${stderr}`.includes(
+              "No local changes to save"
+            );
+          }
+          await execa("npm", ["install", "-E", `${localPackage}@latest`], {
+            cwd: path.dirname(path.resolve(globRoot, file)),
+            stderr: "inherit",
+            stdin: "inherit",
+            stdout: "inherit",
+          });
+          if (commit && isInGit(path.resolve(globRoot, file))) {
+            await runGit(
+              "add",
+              [
+                path.resolve(globRoot, file),
+                path.resolve(globRoot, path.dirname(file), "package-lock.json"),
+              ],
+              path.dirname(path.resolve(globRoot, file))
+            );
+            await runGit(
+              "commit",
+              ["-m", `Upgrade ${localPackage} to ${expected}`],
+              path.dirname(path.resolve(globRoot, file))
+            );
+            if (push) {
+              await runGit(
+                "push",
+                [],
+                path.dirname(path.resolve(globRoot, file))
+              );
+            }
+            if (stashed) {
+              await runGit(
+                "stash",
+                ["apply"],
+                path.dirname(path.resolve(globRoot, file))
+              );
+            }
+          }
         } else {
           console.log(
-            `⚠️  Local package ${localPackage} is not up to date! [in "${key}" of "${file}"]`
+            `⚠️  Local package ${localPackage} is not up to date! [in "${key}" of "${path.join(
+              globRoot,
+              file
+            )}"]`
           );
           console.log(`   ${expected} is latest but ${actual} is installed.`);
           console.log(
@@ -75,14 +157,56 @@ async function checkLocalDeps(json, key, file) {
   }
 }
 
-async function checkLocalInstallsAreUpToDate() {
+async function isInGit(file) {
+  const { stdout, stderr } = await execa("git", ["status"], {
+    cwd: path.dirname(file),
+    reject: false,
+  });
+  if ((stdout + stderr).includes("fatal: not a git repository")) {
+    return false;
+  }
+  return true;
+}
+
+async function runGit(cmd, args, cwd, options = {}) {
+  return await execa("git", [cmd, ...args], {
+    cwd,
+    stdin: "inherit",
+    stderr: "inherit",
+    stdout: "inherit",
+    ...options,
+  });
+}
+
+async function checkLocalInstallsAreUpToDate({
+  pull,
+  push,
+  fix,
+  commit,
+  globRoot,
+}) {
   const packageJsons = await glob("**/package.json", {
     ignore: "**/node_modules/**",
+    cwd: globRoot,
   });
   for (const packageJson of packageJsons) {
-    const jsonPackageJson = require(path.resolve(".", packageJson));
-    await checkLocalDeps(jsonPackageJson, "dependencies", packageJson);
-    await checkLocalDeps(jsonPackageJson, "devDependencies", packageJson);
+    const absJsonPath = path.resolve(globRoot, packageJson);
+    if (isInGit(absJsonPath) && pull) {
+      await runGit("pull", [], path.dirname(absJsonPath));
+    }
+    const jsonPackageJson = require(absJsonPath);
+    await checkLocalDeps(jsonPackageJson, "dependencies", packageJson, {
+      push,
+      fix,
+      commit,
+      globRoot,
+    });
+    await checkLocalDeps(jsonPackageJson, "devDependencies", packageJson, {
+      push,
+      fix,
+      commit,
+      globRoot,
+    });
   }
 }
 async function checkLocalproxyServerIsUpToDate() {
@@ -90,9 +214,25 @@ async function checkLocalproxyServerIsUpToDate() {
     "❓ The doctor doesn't yet support checking your localproxy server version."
   );
 }
-async function doctor() {
-  await checkGlobalInstallsAreUpToDate();
-  await checkLocalInstallsAreUpToDate();
+
+function parseArgs(args) {
+  return {
+    fix: args.includes("--fix"),
+    commit: args.includes("--commit"),
+    push: args.includes("--push"),
+    pull: args.includes("--pull"),
+    globRoot: args.filter(
+      (arg) => !["--fix", "--commit", "--push", "--pull"].includes(arg)
+    )[0],
+  };
+}
+
+async function doctor(args) {
+  const { globRoot, fix, commit, push, pull } = parseArgs(args);
+  await checkGlobalInstallsAreUpToDate({ fix });
+  if (globRoot) {
+    await checkLocalInstallsAreUpToDate({ fix, commit, push, pull, globRoot });
+  }
   await checkLocalproxyServerIsUpToDate();
 
   console.log(`⚕️  The doctor is done! Reports will be found above.`);

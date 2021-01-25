@@ -64,7 +64,7 @@ async function main(_node, leelaScript, ...args) {
       break;
     }
     case isDoctor(args): {
-      await doctor(args);
+      await doctor(rest(args));
       break;
     }
     case isProxy(args): {
