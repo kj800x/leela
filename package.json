@@ -1,6 +1,6 @@
 {
   "name": "@kj800x/leela",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "Manages stuff. Most competent on the team. Close second to Bender.",
   "bin": {
     "leela": "cli.js"
@@ -15,6 +15,7 @@
     "@kj800x/localproxy-cli": "0.3.0",
     "chalk": "4.1.0",
     "execa": "5.0.0",
+    "glob": "7.1.6",
     "npm-api": "1.0.1"
   }
 }

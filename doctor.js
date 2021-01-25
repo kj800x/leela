@@ -43,9 +43,16 @@ async function getActual(package) {
     GLOBAL_DIR = stdout;
   }
 
-  return require(require.resolve(`${package}/package.json`, {
-    paths: [GLOBAL_DIR],
-  })).version;
+  try {
+    return require(require.resolve(`${package}/package.json`, {
+      paths: [GLOBAL_DIR],
+    })).version;
+  } catch (e) {
+    if (e.message.includes("Cannot find module")) {
+      return "[[NOT INSTALLED]]";
+    }
+    throw e;
+  }
 }
 
 async function checkGlobalInstallsAreUpToDate({ fix }) {
