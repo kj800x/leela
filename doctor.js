@@ -3,6 +3,8 @@ const path = require("path");
 const NpmApi = require("npm-api");
 const util = require("util");
 const glob = util.promisify(require("glob"));
+const chalk = require("chalk");
+const process = require("process");
 
 const npm = new NpmApi();
 
@@ -24,9 +26,20 @@ async function getLatest(package) {
   return CACHED_VERSION_RESULTS[package];
 }
 
+async function run(cmd, args, opts) {
+  if (process.env.LEELA_DEBUG) {
+    console.log(
+      `RUN: Running ${chalk.blue([cmd, ...args].join(" "))} in ${chalk.blue(
+        path.resolve((opts || {}).cwd || ".")
+      )}`
+    );
+  }
+  return await execa(cmd, args, opts);
+}
+
 async function getActual(package) {
   if (!GLOBAL_DIR) {
-    const { stdout } = await execa("npm", ["root", "-g"]);
+    const { stdout } = await run("npm", ["root", "-g"]);
     GLOBAL_DIR = stdout;
   }
 
@@ -40,20 +53,36 @@ async function checkGlobalInstallsAreUpToDate({ fix }) {
     const expected = await getLatest(globalPackage);
     const actual = await getActual(globalPackage);
     if (expected === actual) {
-      console.log(`✔️  Global package ${globalPackage} is up to date!`);
+      console.log(
+        `✔️  Global package ${chalk.green(globalPackage)} is up to date!`
+      );
     } else if (fix) {
-      console.log(`⚠️  Global package ${globalPackage} is not up to date!`);
-      console.log(`   ${expected} is latest but ${actual} is installed.`);
+      console.log(
+        `⚠️  Global package ${chalk.red(globalPackage)} is not up to date!`
+      );
+      console.log(
+        `   ${chalk.green(expected)} is latest but ${chalk.red(
+          actual
+        )} is installed.`
+      );
       console.log(`   Attempting to autofix.`);
-      await execa("npm", ["install", "-g", `${globalPackage}@latest`], {
+      await run("npm", ["install", "-g", `${globalPackage}@latest`], {
         stderr: "inherit",
         stdin: "inherit",
         stdout: "inherit",
       });
     } else {
-      console.log(`⚠️  Global package ${globalPackage} is not up to date!`);
-      console.log(`   ${expected} is latest but ${actual} is installed.`);
-      console.log(`   Run \`npm install -g ${globalPackage}@latest\` to fix.`);
+      console.log(
+        `⚠️  Global package ${chalk.red(globalPackage)} is not up to date!`
+      );
+      console.log(
+        `   ${chalk.green(expected)} is latest but ${chalk.red(
+          actual
+        )} is installed.`
+      );
+      console.log(
+        `   Run ${chalk.blue(`npm install -g ${globalPackage}@latest`)} to fix.`
+      );
       console.log();
     }
   }
@@ -72,20 +101,26 @@ async function checkLocalDeps(
         const expected = await getLatest(localPackage);
         if (actual === expected) {
           console.log(
-            `✔️  Local package ${localPackage} is up to date! [in "${key}" of "${path.join(
-              globRoot,
-              file
-            )}"]`
+            `✔️  Local package ${chalk.green(
+              localPackage
+            )} is up to date! [in ${chalk.cyan(key)} of ${chalk.cyan(
+              path.join(globRoot, file)
+            )}]`
           );
         } else if (fix) {
           let stashed = false;
           console.log(
-            `⚠️  Local package ${localPackage} is not up to date! [in "${key}" of "${path.join(
-              globRoot,
-              file
-            )}"]`
+            `⚠️  Local package ${chalk.red(
+              localPackage
+            )} is not up to date! [in ${chalk.cyan(key)} of ${chalk.cyan(
+              path.join(globRoot, file)
+            )}]`
           );
-          console.log(`   ${expected} is latest but ${actual} is installed.`);
+          console.log(
+            `   ${chalk.green(expected)} is latest but ${chalk.red(
+              actual
+            )} is installed.`
+          );
           console.log(`   Attempting to autofix.`);
           console.log();
           if (commit && isInGit(path.resolve(globRoot, file))) {
@@ -97,14 +132,13 @@ async function checkLocalDeps(
                 stdin: "pipe",
                 stdout: "pipe",
                 stderr: "pipe",
-                reject: false,
               }
             );
             stashed = !`${stdout}${stderr}`.includes(
               "No local changes to save"
             );
           }
-          await execa("npm", ["install", "-E", `${localPackage}@latest`], {
+          await run("npm", ["install", "-E", `${localPackage}@latest`], {
             cwd: path.dirname(path.resolve(globRoot, file)),
             stderr: "inherit",
             stdin: "inherit",
@@ -141,14 +175,21 @@ async function checkLocalDeps(
           }
         } else {
           console.log(
-            `⚠️  Local package ${localPackage} is not up to date! [in "${key}" of "${path.join(
-              globRoot,
-              file
-            )}"]`
+            `⚠️  Local package ${chalk.red(
+              localPackage
+            )} is not up to date! [in ${chalk.cyan(key)} of ${chalk.cyan(
+              path.join(globRoot, file)
+            )}]`
           );
-          console.log(`   ${expected} is latest but ${actual} is installed.`);
           console.log(
-            `   Run \`npm install -E ${localPackage}@latest\` in the project to fix.`
+            `   ${chalk.green(expected)} is latest but ${chalk.red(
+              actual
+            )} is installed.`
+          );
+          console.log(
+            `   Run ${chalk.blue(
+              `npm install -E ${localPackage}@latest`
+            )} in the project to fix.`
           );
           console.log();
         }
@@ -158,7 +199,7 @@ async function checkLocalDeps(
 }
 
 async function isInGit(file) {
-  const { stdout, stderr } = await execa("git", ["status"], {
+  const { stdout, stderr } = await run("git", ["status"], {
     cwd: path.dirname(file),
     reject: false,
   });
@@ -169,11 +210,12 @@ async function isInGit(file) {
 }
 
 async function runGit(cmd, args, cwd, options = {}) {
-  return await execa("git", [cmd, ...args], {
+  return await run("git", [cmd, ...args], {
     cwd,
     stdin: "inherit",
     stderr: "inherit",
     stdout: "inherit",
+    reject: false,
     ...options,
   });
 }
