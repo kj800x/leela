@@ -1,0 +1,13 @@
+{
+  "name": "@kj800x/leela",
+  "version": "0.0.1",
+  "description": "Manages stuff. Most competent on the team. Close second to Bender.",
+  "bin": "cli.js",
+  "author": "Kevin Johnson <kevin@kj800x.com>",
+  "license": "MIT",
+  "dependencies": {
+    "@kj800x/localproxy-cli": "0.3.0",
+    "execa": "5.0.0",
+    "npm-api": "1.0.1"
+  }
+}
