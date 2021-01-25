@@ -5,6 +5,10 @@
   "bin": "cli.js",
   "author": "Kevin Johnson <kevin@kj800x.com>",
   "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/kj800x/leela.git"
+  },
   "dependencies": {
     "@kj800x/localproxy-cli": "0.3.0",
     "execa": "5.0.0",
