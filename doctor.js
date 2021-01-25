@@ -35,7 +35,7 @@ async function getActual(package) {
   })).version;
 }
 
-async function checkGlobalInstallsAreUpToDate(fix) {
+async function checkGlobalInstallsAreUpToDate({ fix }) {
   for (const globalPackage of GLOBAL_PACKAGES_TO_CHECK) {
     const expected = await getLatest(globalPackage);
     const actual = await getActual(globalPackage);
