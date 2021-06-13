@@ -14,7 +14,10 @@
   "dependencies": {
     "@kj800x/localproxy-cli": "0.3.0",
     "chalk": "4.1.0",
+    "cli-select": "1.1.2",
     "execa": "5.0.0",
+    "figures": "3.2.0",
+    "fs-extra": "10.0.0",
     "glob": "7.1.6",
     "npm-api": "1.0.1"
   }
