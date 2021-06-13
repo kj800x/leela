@@ -38,6 +38,11 @@ whoami`
 
 const GUARDED_COMMANDS = ["start", "publish", "run"];
 
+// It seems like the lockfile is sometimes written after the node_modules during an update, so
+// sometimes we see the lockfile modified time is milliseconds after the node_modules modified time.
+// node_modules and the lockfile can differ by this many milliseconds and still be counted up-to-date
+const NM_LOCK_WINDOW = 2000;
+
 const getScriptName = (lScript) =>
   lScript.split("/")[lScript.split("/").length - 1];
 
@@ -130,7 +135,7 @@ function upToDateGuard(scriptName) {
   } else {
     const lockStats = fs.statSync(lockPath);
     const nmStats = fs.statSync(nmPath);
-    if (nmStats.mtimeMs < lockStats.mtimeMs) {
+    if (nmStats.mtimeMs < lockStats.mtimeMs - NM_LOCK_WINDOW) {
       console.error(chalk.red("node_modules are out of date"));
       hadError = true;
     }
