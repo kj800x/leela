@@ -5,6 +5,8 @@ const util = require("util");
 const glob = util.promisify(require("glob"));
 const chalk = require("chalk");
 const process = require("process");
+const http = require("http");
+const axios = require("axios");
 
 const npm = new NpmApi();
 
@@ -258,10 +260,50 @@ async function checkLocalInstallsAreUpToDate({
     });
   }
 }
+
+async function getLocalproxyServerVersion() {
+  const currentVersion = (
+    await axios({
+      url: "http://localhost/__proxy__/api/version",
+    })
+  ).data;
+  return currentVersion.trim();
+}
+
+async function getExpectedServerVersion() {
+  const VERSION_REGEX = /export VERSION="\${VERSION:=(.*)}"/;
+
+  const buildScript = (
+    await axios({
+      url: "https://raw.githubusercontent.com//kj800x/localproxy/master/localproxy-server/build-deb.sh",
+    })
+  ).data;
+  const versionLine = buildScript
+    .split("\n")
+    .find((line) => VERSION_REGEX.test(line));
+  return versionLine.match(VERSION_REGEX)[1].trim();
+}
+
 async function checkLocalproxyServerIsUpToDate() {
-  console.log(
-    "❓ The doctor doesn't yet support checking your localproxy server version."
-  );
+  const actual = await getLocalproxyServerVersion();
+  const expected = await getExpectedServerVersion();
+
+  if (actual === expected) {
+    console.log(chalk.green(`✔️  System localproxy server is up to date!`));
+  } else {
+    console.log(chalk.red(`⚠️  System localproxy server is not up to date!`));
+    console.log(
+      `   ${chalk.green(expected)} is latest but ${chalk.red(
+        actual
+      )} is installed.`
+    );
+    console.log(
+      `   Download and install the latest release from\n   ${chalk.blue(
+        `https://github.com/kj800x/localproxy/releases`
+      )} to fix.`
+    );
+    console.log();
+  }
 }
 
 function parseArgs(args) {
