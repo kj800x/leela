@@ -12,7 +12,7 @@
     "url": "https://github.com/kj800x/leela.git"
   },
   "dependencies": {
-    "@kj800x/localproxy-cli": "0.3.3",
+    "@kj800x/localproxy-cli": "0.3.4",
     "axios": "0.24.0",
     "chalk": "4.1.0",
     "cli-select": "1.1.2",
