@@ -63,7 +63,9 @@ async function checkGlobalInstallsAreUpToDate({ fix }) {
     const actual = await getActual(globalPackage);
     if (expected === actual) {
       console.log(
-        `✔️  Global package ${chalk.green(globalPackage)} is up to date!`
+        `✔️  Global package ${chalk.green(globalPackage)} (${chalk.green(
+          actual
+        )}) is up to date!`
       );
     } else if (fix) {
       console.log(
@@ -110,9 +112,9 @@ async function checkLocalDeps(
         const expected = await getLatest(localPackage);
         if (actual === expected) {
           console.log(
-            `✔️  Local package ${chalk.green(
-              localPackage
-            )} is up to date! [in ${chalk.cyan(key)} of ${chalk.cyan(
+            `✔️  Local package ${chalk.green(localPackage)} (${chalk.green(
+              actual
+            )}) is up to date! [in ${chalk.cyan(key)} of ${chalk.cyan(
               path.join(globRoot, file)
             )}]`
           );
@@ -271,17 +273,11 @@ async function getLocalproxyServerVersion() {
 }
 
 async function getExpectedServerVersion() {
-  const VERSION_REGEX = /export VERSION="\${VERSION:=(.*)}"/;
-
-  const buildScript = (
+  return (
     await axios({
-      url: "https://raw.githubusercontent.com//kj800x/localproxy/master/localproxy-server/build-deb.sh",
+      url: "https://raw.githubusercontent.com//kj800x/localproxy/master/localproxy-server/package.json",
     })
-  ).data;
-  const versionLine = buildScript
-    .split("\n")
-    .find((line) => VERSION_REGEX.test(line));
-  return versionLine.match(VERSION_REGEX)[1].trim();
+  ).data.version;
 }
 
 async function checkLocalproxyServerIsUpToDate() {
@@ -289,7 +285,11 @@ async function checkLocalproxyServerIsUpToDate() {
   const expected = await getExpectedServerVersion();
 
   if (actual === expected) {
-    console.log(chalk.green(`✔️  System localproxy server is up to date!`));
+    console.log(
+      `✔️  System ${chalk.green("localproxy server")} (${chalk.green(
+        actual
+      )}) is up to date!`
+    );
   } else {
     console.log(chalk.red(`⚠️  System localproxy server is not up to date!`));
     console.log(
