@@ -10,9 +10,11 @@ const figures = require("figures");
 const cliSelect = require("cli-select");
 const thisPackageJson = require("./package.json");
 const { doctor } = require("./doctor");
+const { executeEc2Deploy } = require("./ec2-deploy");
 
 const isStart = (args) => args.length === 0;
 const isYarn = (args) => args[0] === "yarn";
+const isEc2Deploy = (args) => args[0] === "ec2-deploy";
 const isInit = (args) => args[0] === "init";
 const isVersion = (args) => args[0] === "version";
 const isDoctor = (args) => args[0] === "doctor";
@@ -212,6 +214,10 @@ async function main(_node, leelaScript, ...args) {
       console.log(
         `${chalk.cyanBright(args[1])} ${chalk.green("alias created")}`
       );
+      break;
+    }
+    case isEc2Deploy(args): {
+      await executeEc2Deploy();
       break;
     }
     case isInit(args): {
