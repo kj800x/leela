@@ -1,10 +1,11 @@
-const execa = require("execa");
-const path = require("path");
-const NpmApi = require("npm-api");
-const util = require("util");
+import execa from "execa";
+import path from "path";
+// @ts-expect-error npm-api is untyped
+import NpmApi from "npm-api";
+import util from "util";
 const glob = util.promisify(require("glob"));
-const chalk = require("chalk");
-const process = require("process");
+import chalk from "chalk";
+import process from "process";
 
 const npm = new NpmApi();
 
@@ -14,48 +15,58 @@ const LOCAL_PACKAGES_TO_CHECK = [
   "@kj800x/localproxy-client",
   "@kj800x/localproxy-cli",
 ];
-const CACHED_VERSION_RESULTS = {};
+const CACHED_VERSION_RESULTS: { [key: string]: string } = {};
 let GLOBAL_DIR = "";
 
-async function getLatest(package) {
-  if (!CACHED_VERSION_RESULTS[package]) {
-    const repo = npm.repo(package);
-    CACHED_VERSION_RESULTS[package] = (await repo.version("latest")).version;
-  }
-
-  return CACHED_VERSION_RESULTS[package];
+interface PkgJson {
+  dependencies: {
+    [key: string]: string;
+  };
+  devDependencies: {
+    [key: string]: string;
+  };
 }
 
-async function run(cmd, args, opts) {
+async function getLatest(pkg: string) {
+  if (!CACHED_VERSION_RESULTS[pkg]) {
+    const repo = npm.repo(pkg);
+    CACHED_VERSION_RESULTS[pkg] = (await repo.version("latest"))
+      .version as string;
+  }
+
+  return CACHED_VERSION_RESULTS[pkg];
+}
+
+async function run(cmd: string, args: string[], opts?: execa.Options<string>) {
   if (process.env.LEELA_DEBUG) {
     console.log(
       `RUN: Running ${chalk.blue([cmd, ...args].join(" "))} in ${chalk.blue(
-        path.resolve((opts || {}).cwd || ".")
+        path.resolve(opts?.cwd ?? ".")
       )}`
     );
   }
   return await execa(cmd, args, opts);
 }
 
-async function getActual(package) {
+async function getActual(pkg: string) {
   if (!GLOBAL_DIR) {
     const { stdout } = await run("npm", ["root", "-g"]);
     GLOBAL_DIR = stdout;
   }
 
   try {
-    return require(require.resolve(`${package}/package.json`, {
+    return require(require.resolve(`${pkg}/package.json`, {
       paths: [GLOBAL_DIR],
     })).version;
   } catch (e) {
-    if (e.message.includes("Cannot find module")) {
+    if ((e as Error).message.includes("Cannot find module")) {
       return "[[NOT INSTALLED]]";
     }
     throw e;
   }
 }
 
-async function checkGlobalInstallsAreUpToDate({ fix }) {
+async function checkGlobalInstallsAreUpToDate({ fix }: GlobalArgs) {
   for (const globalPackage of GLOBAL_PACKAGES_TO_CHECK) {
     const expected = await getLatest(globalPackage);
     const actual = await getActual(globalPackage);
@@ -96,10 +107,10 @@ async function checkGlobalInstallsAreUpToDate({ fix }) {
 }
 
 async function checkLocalDeps(
-  json,
-  key,
-  file,
-  { push, fix, commit, globRoot }
+  json: PkgJson,
+  key: "dependencies" | "devDependencies",
+  file: string,
+  { push, fix, commit, globRoot }: LocalArgs
 ) {
   if (json && json[key]) {
     for (const localPackage of LOCAL_PACKAGES_TO_CHECK) {
@@ -205,7 +216,7 @@ async function checkLocalDeps(
   }
 }
 
-async function isInGit(file) {
+async function isInGit(file: string) {
   const { stdout, stderr } = await run("git", ["status"], {
     cwd: path.dirname(file),
     reject: false,
@@ -216,7 +227,7 @@ async function isInGit(file) {
   return true;
 }
 
-async function runGit(cmd, args, cwd, options = {}) {
+async function runGit(cmd: string, args: string[], cwd: string, options = {}) {
   return await run("git", [cmd, ...args], {
     cwd,
     stdin: "inherit",
@@ -233,24 +244,26 @@ async function checkLocalInstallsAreUpToDate({
   fix,
   commit,
   globRoot,
-}) {
+}: LocalArgs) {
   const packageJsons = await glob("**/package.json", {
     ignore: "**/node_modules/**",
     cwd: globRoot,
   });
   for (const packageJson of packageJsons) {
     const absJsonPath = path.resolve(globRoot, packageJson);
-    if (isInGit(absJsonPath) && pull) {
+    if ((await isInGit(absJsonPath)) && pull) {
       await runGit("pull", [], path.dirname(absJsonPath));
     }
     const jsonPackageJson = require(absJsonPath);
     await checkLocalDeps(jsonPackageJson, "dependencies", packageJson, {
+      pull,
       push,
       fix,
       commit,
       globRoot,
     });
     await checkLocalDeps(jsonPackageJson, "devDependencies", packageJson, {
+      pull,
       push,
       fix,
       commit,
@@ -264,7 +277,27 @@ async function checkLocalproxyServerIsUpToDate() {
   );
 }
 
-function parseArgs(args) {
+interface RawArgs {
+  fix: boolean;
+  commit: boolean;
+  push: boolean;
+  pull: boolean;
+  globRoot?: string;
+}
+
+interface GlobalArgs {
+  fix: boolean;
+}
+
+interface LocalArgs {
+  fix: boolean;
+  commit: boolean;
+  push: boolean;
+  pull: boolean;
+  globRoot: string;
+}
+
+function parseArgs(args: string[]): RawArgs {
   return {
     fix: args.includes("--fix"),
     commit: args.includes("--commit"),
@@ -276,7 +309,7 @@ function parseArgs(args) {
   };
 }
 
-async function doctor(args) {
+export async function doctor(args: string[]) {
   const { globRoot, fix, commit, push, pull } = parseArgs(args);
   await checkGlobalInstallsAreUpToDate({ fix });
   if (globRoot) {
@@ -286,5 +319,3 @@ async function doctor(args) {
 
   console.log(`⚕️  The doctor is done! Reports will be found above.`);
 }
-
-module.exports = { doctor };
