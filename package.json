@@ -3,13 +3,18 @@
   "version": "0.3.2",
   "description": "Manages stuff. Most competent on the team. Close second to Bender.",
   "bin": {
-    "leela": "cli.js"
+    "leela": "lib/cli.js"
   },
   "author": "Kevin Johnson <kevin@kj800x.com>",
   "license": "MIT",
   "repository": {
     "type": "git",
     "url": "https://github.com/kj800x/leela.git"
+  },
+  "scripts": {
+    "prepare": "npm run build",
+    "build": "tsc",
+    "clean": "rm -rf lib"
   },
   "dependencies": {
     "@kj800x/localproxy-cli": "0.3.4",
@@ -21,5 +26,11 @@
     "fs-extra": "10.0.0",
     "glob": "7.1.6",
     "npm-api": "1.0.1"
+  },
+  "devDependencies": {
+    "@types/fs-extra": "^9.0.13",
+    "@types/glob": "^7.2.0",
+    "@types/node": "^17.0.10",
+    "typescript": "4.5.5"
   }
 }

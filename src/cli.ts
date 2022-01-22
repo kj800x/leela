@@ -1,27 +1,26 @@
 #!/usr/bin/env node
 
-const process = require("process");
-const execa = require("execa");
-const path = require("path");
-const fs = require("fs-extra");
-const glob = require("glob");
-const chalk = require("chalk");
-const figures = require("figures");
-const cliSelect = require("cli-select");
-const thisPackageJson = require("./package.json");
-const { doctor } = require("./doctor");
-const { executeEc2Deploy } = require("./ec2-deploy");
+import process from "process";
+import execa from "execa";
+import path from "path";
+import fs from "fs-extra";
+import glob from "glob";
+import chalk from "chalk";
+import figures from "figures";
+import cliSelect from "cli-select";
+import { doctor } from "./doctor";
+import { executeEc2Deploy } from "./ec2-deploy";
 
-const isStart = (args) => args.length === 0;
-const isYarn = (args) => args[0] === "yarn";
-const isEc2Deploy = (args) => args[0] === "ec2-deploy";
-const isInit = (args) => args[0] === "init";
-const isVersion = (args) => args[0] === "version";
-const isDoctor = (args) => args[0] === "doctor";
-const isAlias = (args) => args[0] === "alias";
-const isProxy = (args) => args[0] === "proxy";
-const rest = ([_first, ...rest]) => rest;
-const first = ([first]) => first;
+const isStart = (args: string[]) => args.length === 0;
+const isYarn = (args: string[]) => args[0] === "yarn";
+const isInit = (args: string[]) => args[0] === "init";
+const isEc2Deploy = (args: string[]) => args[0] === "ec2-deploy";
+const isVersion = (args: string[]) => args[0] === "version";
+const isDoctor = (args: string[]) => args[0] === "doctor";
+const isAlias = (args: string[]) => args[0] === "alias";
+const isProxy = (args: string[]) => args[0] === "proxy";
+const rest = ([_first, ...rest]: string[]) => rest;
+const first = ([first]: string[]) => first;
 
 const NPM_COMMANDS = `access, adduser, audit, bin, bugs, c, cache, ci, cit,
 clean-install, clean-install-test, completion, config,
@@ -45,10 +44,10 @@ const GUARDED_COMMANDS = ["start", "publish", "run"];
 // node_modules and the lockfile can differ by this many milliseconds and still be counted up-to-date
 const NM_LOCK_WINDOW = 2000;
 
-const getScriptName = (lScript) =>
+const getScriptName = (lScript: string) =>
   lScript.split("/")[lScript.split("/").length - 1];
 
-function hasStartScript(pkgJsonPath) {
+function hasStartScript(pkgJsonPath: string) {
   if (!fs.existsSync(pkgJsonPath)) {
     return false;
   }
@@ -116,7 +115,7 @@ async function checkStartLocation() {
   process.exit(0);
 }
 
-function upToDateGuard(scriptName) {
+function upToDateGuard(scriptName: string) {
   const BASE_PATH = path.resolve(".");
 
   const nmPath = path.resolve(BASE_PATH, "node_modules");
@@ -149,7 +148,7 @@ function upToDateGuard(scriptName) {
   }
 }
 
-function buildNpmArgs(args, scriptName) {
+function buildNpmArgs(args: string[], scriptName: string) {
   const cmd = first(args);
 
   if (GUARDED_COMMANDS.includes(cmd)) {
@@ -167,7 +166,7 @@ function buildNpmArgs(args, scriptName) {
   return ["run", ...args];
 }
 
-async function runYarn(args, scriptName) {
+async function runYarn(args: string[], scriptName: string) {
   const npmArgs = buildNpmArgs(args, scriptName);
   if (
     npmArgs[0] === "start" ||
@@ -184,7 +183,7 @@ async function runYarn(args, scriptName) {
   });
 }
 
-async function main(_node, leelaScript, ...args) {
+async function main(_node: string, leelaScript: string, ...args: string[]) {
   switch (true) {
     case isStart(args): {
       upToDateGuard(getScriptName(leelaScript));
@@ -198,7 +197,11 @@ async function main(_node, leelaScript, ...args) {
       break;
     }
     case isVersion(args): {
-      console.log(thisPackageJson.version);
+      console.log(
+        JSON.parse(
+          fs.readFileSync(path.resolve(__dirname, "..", "package.json"), "utf8")
+        ).version
+      );
       break;
     }
     case isAlias(args): {
@@ -244,4 +247,4 @@ async function main(_node, leelaScript, ...args) {
   }
 }
 
-main(...process.argv).catch(console.error);
+main(...(process.argv as [string, string, ...string[]])).catch(console.error);

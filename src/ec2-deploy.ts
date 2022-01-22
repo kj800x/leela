@@ -1,14 +1,17 @@
-const fs = require("fs-extra");
-const execa = require("execa");
-const chalk = require("chalk");
+import fs from "fs-extra";
+import execa from "execa";
+import chalk from "chalk";
 
-async function executeEc2Deploy() {
+export async function executeEc2Deploy(): Promise<void> {
   if (!fs.existsSync("./package.json")) {
     throw new Error("missing package.json");
   }
   const packageJson = JSON.parse(fs.readFileSync("./package.json", "utf8"));
 
-  const deployConfig = packageJson["ec2-deploy"];
+  const deployConfig = packageJson["ec2-deploy"] as {
+    path: string;
+    host: string;
+  };
 
   if (!deployConfig) {
     throw new Error("package.json is missing ec2-deploy section");
@@ -52,5 +55,3 @@ async function executeEc2Deploy() {
     { stdio: "inherit" }
   );
 }
-
-module.exports = { executeEc2Deploy };
