@@ -6,6 +6,7 @@ import util from "util";
 const glob = util.promisify(require("glob"));
 import chalk from "chalk";
 import process from "process";
+import axios from "axios";
 
 const npm = new NpmApi();
 
@@ -72,7 +73,9 @@ async function checkGlobalInstallsAreUpToDate({ fix }: GlobalArgs) {
     const actual = await getActual(globalPackage);
     if (expected === actual) {
       console.log(
-        `✔️  Global package ${chalk.green(globalPackage)} is up to date!`
+        `✔️  Global package ${chalk.green(globalPackage)} (${chalk.green(
+          actual
+        )}) is up to date!`
       );
     } else if (fix) {
       console.log(
@@ -119,9 +122,9 @@ async function checkLocalDeps(
         const expected = await getLatest(localPackage);
         if (actual === expected) {
           console.log(
-            `✔️  Local package ${chalk.green(
-              localPackage
-            )} is up to date! [in ${chalk.cyan(key)} of ${chalk.cyan(
+            `✔️  Local package ${chalk.green(localPackage)} (${chalk.green(
+              actual
+            )}) is up to date! [in ${chalk.cyan(key)} of ${chalk.cyan(
               path.join(globRoot, file)
             )}]`
           );
@@ -271,10 +274,48 @@ async function checkLocalInstallsAreUpToDate({
     });
   }
 }
+
+async function getLocalproxyServerVersion(): Promise<string> {
+  const currentVersion = (
+    await axios({
+      url: "http://localhost/__proxy__/api/version",
+    })
+  ).data;
+  return currentVersion.trim();
+}
+
+async function getExpectedServerVersion(): Promise<string> {
+  return (
+    await axios({
+      url: "https://raw.githubusercontent.com//kj800x/localproxy/master/localproxy-server/package.json",
+    })
+  ).data.version;
+}
+
 async function checkLocalproxyServerIsUpToDate() {
-  console.log(
-    "❓ The doctor doesn't yet support checking your localproxy server version."
-  );
+  const actual = await getLocalproxyServerVersion();
+  const expected = await getExpectedServerVersion();
+
+  if (actual === expected) {
+    console.log(
+      `✔️  System ${chalk.green("localproxy server")} (${chalk.green(
+        actual
+      )}) is up to date!`
+    );
+  } else {
+    console.log(chalk.red(`⚠️  System localproxy server is not up to date!`));
+    console.log(
+      `   ${chalk.green(expected)} is latest but ${chalk.red(
+        actual
+      )} is installed.`
+    );
+    console.log(
+      `   Download and install the latest release from\n   ${chalk.blue(
+        `https://github.com/kj800x/localproxy/releases`
+      )} to fix.`
+    );
+    console.log();
+  }
 }
 
 interface RawArgs {

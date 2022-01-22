@@ -9,10 +9,12 @@ import chalk from "chalk";
 import figures from "figures";
 import cliSelect from "cli-select";
 import { doctor } from "./doctor";
+import { executeEc2Deploy } from "./ec2-deploy";
 
 const isStart = (args: string[]) => args.length === 0;
 const isYarn = (args: string[]) => args[0] === "yarn";
 const isInit = (args: string[]) => args[0] === "init";
+const isEc2Deploy = (args: string[]) => args[0] === "ec2-deploy";
 const isVersion = (args: string[]) => args[0] === "version";
 const isDoctor = (args: string[]) => args[0] === "doctor";
 const isAlias = (args: string[]) => args[0] === "alias";
@@ -215,6 +217,10 @@ async function main(_node: string, leelaScript: string, ...args: string[]) {
       console.log(
         `${chalk.cyanBright(args[1])} ${chalk.green("alias created")}`
       );
+      break;
+    }
+    case isEc2Deploy(args): {
+      await executeEc2Deploy();
       break;
     }
     case isInit(args): {

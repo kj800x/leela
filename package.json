@@ -1,6 +1,6 @@
 {
   "name": "@kj800x/leela",
-  "version": "0.2.1",
+  "version": "0.3.1",
   "description": "Manages stuff. Most competent on the team. Close second to Bender.",
   "bin": {
     "leela": "cli.js"
@@ -17,7 +17,8 @@
     "clean": "rm -rf lib"
   },
   "dependencies": {
-    "@kj800x/localproxy-cli": "0.3.3",
+    "@kj800x/localproxy-cli": "0.3.4",
+    "axios": "0.24.0",
     "chalk": "4.1.0",
     "cli-select": "1.1.2",
     "execa": "5.0.0",
