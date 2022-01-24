@@ -1,4 +1,5 @@
-import { AbstractMod } from "./mods/AbstractMod";
+import { CheckLocalproxyServerMod } from "./mods/CheckLocalproxyServerMod";
+import { AbstractMod } from "./mods/helpers/AbstractMod";
 import { NpmAuditMod } from "./mods/NpmAuditMod";
 import { NpmUseLatestGlobalMod } from "./mods/NpmUseLatestGlobalMod";
 import { NpmUseLatestMod } from "./mods/NpmUseLatestMod";
@@ -8,12 +9,16 @@ type ModName =
   | "pin-dependencies"
   | "npm-use-latest"
   | "npm-use-latest-global"
-  | "npm-audit";
+  | "npm-audit"
+  | "check-server";
 
 export function createMod(modName: ModName, args: string[]): AbstractMod {
   switch (modName) {
+    case "check-server": {
+      return new CheckLocalproxyServerMod();
+    }
     case "pin-dependencies": {
-      return new PinDependenciesMod();
+      return new PinDependenciesMod(args[0]);
     }
     case "npm-audit": {
       return new NpmAuditMod();
@@ -29,3 +34,13 @@ export function createMod(modName: ModName, args: string[]): AbstractMod {
     }
   }
 }
+
+/*
+Run mod:
+if global:
+- just run it (pass in --fix argument)
+
+if pkgJson:
+
+
+*/

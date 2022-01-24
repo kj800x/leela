@@ -10,6 +10,8 @@ import figures from "figures";
 import cliSelect from "cli-select";
 import { doctor } from "./doctor";
 import { executeEc2Deploy } from "./ec2-deploy";
+import { PinDependenciesMod } from "./mods/PinDependenciesMod";
+import { findPackageJsons } from "./findPackageJsons";
 
 const isStart = (args: string[]) => args.length === 0;
 const isYarn = (args: string[]) => args[0] === "yarn";
@@ -69,10 +71,9 @@ async function checkStartLocation() {
     return;
   }
 
-  const pkgJsons = glob.sync("**/package.json", {
-    cwd: BASE_PATH,
-    ignore: "**/node_modules/**",
-  });
+  const pkgJsons = findPackageJsons(BASE_PATH, 4).map((dir) =>
+    path.relative(BASE_PATH, dir)
+  );
 
   const options = pkgJsons.filter((e) =>
     hasStartScript(path.resolve(BASE_PATH, e))
@@ -195,6 +196,10 @@ async function main(_node: string, leelaScript: string, ...args: string[]) {
         reject: false,
       });
       break;
+    }
+    case args[0] === "mod": {
+      const mod = new PinDependenciesMod(args[1]);
+      await mod.run();
     }
     case isVersion(args): {
       console.log(

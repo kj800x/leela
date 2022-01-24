@@ -1,7 +1,9 @@
-import { AbstractMod } from "./AbstractMod";
+// @ts-nocheck
 
-export class PinDependenciesMod extends AbstractMod {
-  constructor() {
-    super("package.json");
+import { PackageMod } from "./helpers/PackageMod";
+
+export class PinDependenciesMod extends PackageMod {
+  constructor(rootDir) {
+    super(true, rootDir);
   }
 }

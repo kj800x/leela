@@ -1,3 +1,9 @@
 export abstract class AbstractMod {
-  abstract run(): void;
+  fix: boolean;
+
+  constructor(fix: boolean) {
+    this.fix = fix;
+  }
+
+  abstract run(): Promise<void>;
 }

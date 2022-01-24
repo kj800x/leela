@@ -1,6 +1,8 @@
-import { AbstractMod } from "./AbstractMod";
+// @ts-nocheck
 
-export class NpmAuditMod extends AbstractMod {
+import { PackageMod } from "./helpers/PackageMod";
+
+export class NpmAuditMod extends PackageMod {
   constructor() {
     super("package.json");
   }

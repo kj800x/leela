@@ -1,6 +1,8 @@
-import { AbstractMod } from "./AbstractMod";
+// @ts-nocheck
 
-export class NpmUseLatestMod extends AbstractMod {
+import { PackageMod } from "./helpers/PackageMod";
+
+export class NpmUseLatestMod extends PackageMod {
   pkg: string;
 
   constructor(pkg: string) {
