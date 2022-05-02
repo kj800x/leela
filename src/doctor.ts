@@ -144,7 +144,7 @@ async function checkLocalDeps(
           );
           console.log(`   Attempting to autofix.`);
           console.log();
-          if (commit && isInGit(path.resolve(globRoot, file))) {
+          if (commit && (await isInGit(path.resolve(globRoot, file)))) {
             const { stdout, stderr } = await runGit(
               "stash",
               [],
@@ -165,7 +165,7 @@ async function checkLocalDeps(
             stdin: "inherit",
             stdout: "inherit",
           });
-          if (commit && isInGit(path.resolve(globRoot, file))) {
+          if (commit && (await isInGit(path.resolve(globRoot, file)))) {
             await runGit(
               "add",
               [

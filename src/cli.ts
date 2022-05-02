@@ -9,12 +9,12 @@ import chalk from "chalk";
 import figures from "figures";
 import cliSelect from "cli-select";
 import { doctor } from "./doctor";
-import { executeEc2Deploy } from "./ec2-deploy";
+import { executeSshDeploy } from "./ssh-deploy";
 
 const isStart = (args: string[]) => args.length === 0;
 const isYarn = (args: string[]) => args[0] === "yarn";
 const isInit = (args: string[]) => args[0] === "init";
-const isEc2Deploy = (args: string[]) => args[0] === "ec2-deploy";
+const isSshDeploy = (args: string[]) => args[0] === "ssh-deploy";
 const isVersion = (args: string[]) => args[0] === "version";
 const isDoctor = (args: string[]) => args[0] === "doctor";
 const isAlias = (args: string[]) => args[0] === "alias";
@@ -219,8 +219,8 @@ async function main(_node: string, leelaScript: string, ...args: string[]) {
       );
       break;
     }
-    case isEc2Deploy(args): {
-      await executeEc2Deploy();
+    case isSshDeploy(args): {
+      await executeSshDeploy();
       break;
     }
     case isInit(args): {
